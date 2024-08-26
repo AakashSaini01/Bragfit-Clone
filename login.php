@@ -18,12 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		$_SESSION['user_id'] = $row['user_id'];
 		header("location: index.php");
 	} else {
-		echo "<script>
-            $(document).ready(function() {
-                $('#alertModalBody').text('LOGIN not done');
-                $('#alertModal').modal('show');
-            });
-          </script>";
+		echo "<script>alert('login not done')</script>";
 	}
 }
 

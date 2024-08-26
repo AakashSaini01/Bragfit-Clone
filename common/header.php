@@ -52,7 +52,7 @@
                             <li><a class="dropdown-item" href="#">Orders</a></li>
                             <li><a class="dropdown-item" href="#">Addresses</a></li>
                             <li><a class="dropdown-item" href="#">Account Details</a></li>
-                            <li><a class="dropdown-item" href="#">Wishlist</a></li>
+                            <li><a class="dropdown-item" href="wishlist.php">Wishlist</a></li>
                             <li><a class="dropdown-item" href="logout.php">Logout</a></li>
                         </ul>
                     </div>

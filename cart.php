@@ -1,7 +1,6 @@
 <?php
 include 'common/connection.php';
 
-
 if (!isset($_SESSION['username'])) {
     header("location: login.php");
     exit(); // Always exit after a redirect
@@ -9,44 +8,49 @@ if (!isset($_SESSION['username'])) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-
     if (isset($_POST['d_p_id'])) {
-        $d_id = $_POST['d_p_id'];
+        $d_id = intval($_POST['d_p_id']);
+        $user_id = intval($_POST['user_id']);
 
-        $sql = 'DELETE from cart where product_id = ' . $d_id . ' ';
+        $sql = 'DELETE from cart where product_id = ' . $d_id . ' and user_id = ' . $user_id . ' ';
         $flag = $con->query($sql);
 
-        if ($flag) {
-            echo '<script>alert("Product Deleted successfully")</script>';
-        } else {
-            echo '<script>alert("Product can\'t be Deleted")</script>';
-        }
+        $modalMessage = $flag ? "Product Deleted successfully" : "Product can't be Deleted";
+        $modalType = $flag ? "success" : "danger";
+    }
+
+    if (isset($_POST['u_p_id'])) {
+        $u_id = intval($_POST['u_p_id']);
+        $new_qty = intval($_POST['new_qty']);
+        $user_id = intval($_POST['user_id']);
+
+        $sql = 'UPDATE cart set qty = ' . $new_qty . ' where product_id = ' . $u_id . ' and user_id = ' . $user_id . ' ';
+        $flag = $con->query($sql);
+
+        $modalMessage = $flag ? "Product qty updated successfully" : "Product qty can't be updated";
+        $modalType = $flag ? "success" : "danger";
     }
 
     if (isset($_POST['qty']) && isset($_POST['product_id']) && isset($_SESSION['user_id'])) {
-        // Sanitize input values
         $qty = intval($_POST['qty']);
         $product_id = intval($_POST['product_id']);
         $user_id = intval($_SESSION['user_id']);
 
-        // Check if the product is already in the cart
         $checkSql = "SELECT * FROM cart WHERE product_id = '$product_id' AND user_id = '$user_id'";
         $checkResult = $con->query($checkSql);
 
         if ($checkResult->num_rows > 0) {
-            // Product exists, update it
-            $updateSql = "UPDATE cart SET qty ='$qty' WHERE product_id = '$product_id' AND user_id = '$user_id'";
+            $updateSql = "UPDATE cart SET qty = qty + '$qty' WHERE product_id = '$product_id' AND user_id = '$user_id'";
             $updateResult = $con->query($updateSql);
+
+            $modalMessage = $updateResult ? "Product updated" : "Product can't be updated";
+            $modalType = $updateResult ? "success" : "danger";
         } else {
-            // Product does not exist, insert it
             $insertSql = "INSERT INTO cart (user_id, product_id, qty) VALUES ('$user_id', '$product_id', '$qty')";
             $insertResult = $con->query($insertSql);
 
-            if ($insertResult) {
-                echo '<script>alert("Product added...")</script>';
-            } else {
-                echo '<script>alert("Product can\'t be added...")</script>';
-            }
+            $modalMessage = $insertResult ? "Product added" : "Product can't be added";
+            $modalType = $insertResult ? "success" : "danger";
         }
     }
 }
@@ -54,12 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $user_id = $_SESSION['user_id'];
 
 if ($user_id === false) {
-    echo '<script>alert("Invalid user data...")</script>';
-    exit();
+    $modalMessage = "Invalid user data";
+    $modalType = "danger";
 }
 
-
-// Fetch cart items
 $selectSql = "
     SELECT c.product_id, c.qty, p.product_name, p.product_img, p.product_price
     FROM cart c
@@ -67,8 +69,6 @@ $selectSql = "
     WHERE c.user_id = '$user_id'
 ";
 $result = $con->query($selectSql);
-
-
 ?>
 
 <!DOCTYPE html>
@@ -84,7 +84,6 @@ $result = $con->query($selectSql);
     <div class="container-fluid text-bg-warning shop">
         <div class="step">SHOPPING CART</div>
     </div>
-
     <div class="container tb">
         <table class="cart-table table table-striped">
             <thead>
@@ -98,34 +97,43 @@ $result = $con->query($selectSql);
             </thead>
             <tbody>
                 <?php foreach ($result as $row) { ?>
-                    <tr align="center" id="row-<?= $row['product_id']; ?>">
+                    <tr align="center">
                         <td>
-                            <img src="assets/images/<?= $row['product_img']; ?>" alt="Product" class="product-image" />
-                            <?= $row['product_name']; ?>
+                            <img src="assets/images/<?= $row['product_img']; ?>" alt="Product"
+                                class="product-image" /><?= $row['product_name']; ?>
                         </td>
-                        <td class="text-secondary">₹<?= $row['product_price']; ?></td>
+                        <td class="text-secondary">₹<?= $row['product_price']; ?>.00</td>
                         <td>
-                            <span class="qty-display"><?= $row['qty']; ?></span>
-                            <div class="qty-input-group d-none">
-                                <button id="sub" type="button" class="btn btn-sm btn-outline-secondary">-</button>
-                                <input type="number" id="qty" class="qty-input center" value="<?= $row['qty']; ?>"
-                                    min="1" />
-                                <button id="add" type="button" class="btn btn-sm btn-outline-secondary">+</button>
-                            </div>
-                        </td>
-                        <td class="text-warning">₹<span
-                                class="amount-display"><?= $row['qty'] * $row['product_price']; ?></span></td>
-                        <td>
+                            <p class="old_qty"><?= $row['qty']; ?></p>
                             <form class="d-inline-block" action="cart.php" method="post">
-                                <input type="hidden" name="d_p_id" value="<?= $row['product_id'] ?>">
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                <input type="number" class="form-control new_qty" name="new_qty" style="display:none;"
+                                    value="<?= $row['qty']; ?>">
+                        </td>
+                        <td class="text-warning">₹<?= $row['qty'] * $row['product_price']; ?>.00</td>
+                        <td>
+                            <input type="hidden" name="u_p_id" value="<?= $row['product_id'] ?>">
+                            <input type="hidden" name="user_id" value="<?= $_SESSION['user_id'] ?>">
+                            <button type="button" class="btn btn-primary edit-btn">EDIT</button>
+                            <button type="submit" name="save_qty" style="display: none;" class="btn btn-primary save">
+                                Save</button>
                             </form>
-                            <button class="btn btn-primary btn-sm edit-btn"
-                                onclick="editProduct(<?= $row['product_id']; ?>)">EDIT</button>
-                            <button class="btn btn-success btn-sm save-btn d-none"
-                                onclick="saveProduct(<?= $row['product_id']; ?>)">SAVE</button>
-                            <button class="btn btn-secondary btn-sm cancel-btn d-none"
-                                onclick="cancelEdit(<?= $row['product_id']; ?>)">CANCEL</button>
+                            <script type="text/javascript">
+                                $(document).ready(function () {
+                                    $(".edit-btn").click(function () {
+                                        var row = $(this).closest("tr");
+                                        row.find(".edit-btn").hide();
+                                        row.find(".old_qty").hide();
+                                        row.find(".delete").hide();
+                                        row.find(".save").show();
+                                        row.find(".new_qty").show();
+                                    });
+                                });
+                            </script>
+                            <form action="cart.php" method="post" class="d-inline-block">
+                                <input type="hidden" name="d_p_id" value="<?= $row['product_id'] ?>">
+                                <input type="hidden" name="user_id" value="<?= $_SESSION['user_id'] ?>">
+                                <button type="submit" class="btn btn-danger delete">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 <?php } ?>
@@ -134,7 +142,8 @@ $result = $con->query($selectSql);
 
         <div class="row">
             <div class="col-md-6 text-center">
-                <button class="btn btn-success m-3 text-white"><a href="index.php">Continue Shopping</a></button>
+                <button class="btn btn-success m-3 text-white"><a href="index.php" class="text-white">Continue
+                        Shopping</a></button>
             </div>
             <div class="col-md-6 text-center">
                 <button class="btn btn-warning m-3 text-white">Proceed to Checkout</button>
@@ -142,69 +151,35 @@ $result = $con->query($selectSql);
         </div>
     </div>
 
+    <!-- Bootstrap Modals -->
+    <?php if (isset($modalMessage)) { ?>
+        <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="notificationModalLabel">
+                            <?= $modalType === "success" ? "Success" : "Error" ?>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <?= $modalMessage ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $('#notificationModal').modal('show');
+            });
+        </script>
+    <?php } ?>
+
     <?php include 'common/footer.php'; ?>
-
-    <script>
-        $(document).ready(function () {
-            function editProduct(productId) {
-                // Toggle the visibility of edit buttons and inputs
-                $(`#row-${productId} .qty-display`).addClass('d-none');
-                $(`#row-${productId} .qty-input-group`).removeClass('d-none');
-                $(`#row-${productId} .edit-btn`).addClass('d-none');
-                $(`#row-${productId} .save-btn`).removeClass('d-none');
-                $(`#row-${productId} .cancel-btn`).removeClass('d-none');
-
-                // Increment and Decrement functionality
-                $(`#row-${productId} #add`).on('click', function () {
-                    const qtyInput = $(`#row-${productId} #qty`);
-                    qtyInput.val(parseInt(qtyInput.val()) + 1);
-                });
-
-                $(`#row-${productId} #sub`).on('click', function () {
-                    const qtyInput = $(`#row-${productId} #qty`);
-                    if (qtyInput.val() > 1) {
-                        qtyInput.val(parseInt(qtyInput.val()) - 1);
-                    }
-                });
-            }
-
-            function cancelEdit(productId) {
-                // Restore original state
-                $(`#row-${productId} .qty-display`).removeClass('d-none');
-                $(`#row-${productId} .qty-input-group`).addClass('d-none');
-                $(`#row-${productId} .edit-btn`).removeClass('d-none');
-                $(`#row-${productId} .save-btn`).addClass('d-none');
-                $(`#row-${productId} .cancel-btn`).addClass('d-none');
-            }
-
-            function saveProduct(productId) {
-                const qtyInput = $(`#row-${productId} #qty`).val();
-                const formData = new FormData();
-                formData.append('qty', qtyInput);
-                formData.append('product_id', productId);
-
-                fetch('cart.php', {
-                    method: 'POST',
-                    body: formData,
-                })
-                    .then(response => response.text())
-                    .then(data => {
-                        alert('Product updated successfully!');
-                        location.reload(); // Refresh the page to show the updated cart
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to update product');
-                    });
-            }
-
-            // Make functions globally accessible
-            window.editProduct = editProduct;
-            window.cancelEdit = cancelEdit;
-            window.saveProduct = saveProduct;
-        });
-    </script>
-
 </body>
 
 </html>

@@ -11,12 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   $confirm_password = $_POST['confirm_password'];
 
   if ($password !== $confirm_password) {
-    echo "<script>
-             $(document).ready(function() {
-                $('#alertModalBody').text('PASSWORD Doesn't Match');
-                $('#alertModal').modal('show');
-            });
-          </script>";
+    echo "<script>alert('Passwords do not match.')</script>";
   }
 
   $sql = "INSERT INTO users (`password`, `username`, `fullname`, `email`, `phone_no`, `address`) 
@@ -28,12 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $_SESSION['username'] = $username;
     header("location: login.php");
   } else {
-    echo "<script>
-            $(document).ready(function() {
-                $('#alertModalBody').text('Signup not done');
-                $('#alertModal').modal('show');
-            });
-          </script>";
+    echo "<script>alert('Signup not done')</script>";
   }
 }
 ?>

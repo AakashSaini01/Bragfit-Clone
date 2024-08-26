@@ -4,7 +4,7 @@ include 'common/connection.php';
 
 $cid = $_GET['id'];
 
-$sql = 'SELECT * from products WHERE category_id = '.$cid;
+$sql = 'SELECT * from products WHERE category_id = ' . $cid;
 
 $result = $con->query($sql);
 
@@ -22,11 +22,10 @@ $result = $con->query($sql);
 <body>
     <?php include 'common/header.php'; ?>
 
-        
 
     <div class="container align">
         <div class="row">
-            <?php foreach ($result as $col) { ?>         
+            <?php foreach ($result as $col) { ?>
                 <div class="col-lg-4 col-md-6 center">
                     <a href="product_info.php?id=<?= $col['product_id'] ?>">
                         <div class="position-relative">
@@ -45,5 +44,6 @@ $result = $con->query($sql);
         </div>
     </div>
 
-    </div>
-    </div>
+</body>
+
+</html>
